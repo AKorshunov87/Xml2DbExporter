@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="Orders">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="CustomerID" type="xs:int" minOccurs="1" maxOccurs="1"/>
+				<xs:element name="OrderDate" type="xs:date" minOccurs="1" maxOccurs="1"/>
+				<xs:element name="OrderDetailsList" minOccurs="1" maxOccurs="1">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element maxOccurs="unbounded" name="OrderDetails" minOccurs="1">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="OrderValue" type="xs:string" minOccurs="1" maxOccurs="1"/>
+										<xs:element name="OrderStatus" type="xs:int" minOccurs="1" maxOccurs="1"/>
+										<xs:element name="OrderType" type="xs:int" minOccurs="1" maxOccurs="1"/>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

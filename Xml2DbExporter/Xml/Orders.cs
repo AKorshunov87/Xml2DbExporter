@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Xml.Serialization;
+using Xml2DbExporter.Data;
 
 namespace Xml2DbExporter.Xml {
     [SerializableAttribute]
@@ -27,6 +28,18 @@ namespace Xml2DbExporter.Xml {
         public OrderDetails[] OrderDetailsList {
             get { return orderDetailsList; }
             set { orderDetailsList = value; }
+        }
+
+        public OrderModel ToOrder(OrderDetails orderDetails) {
+            OrderModel order = new OrderModel();
+
+            order.CustomerID = this.CustomerID;
+            order.OrderDate = this.OrderDate;
+
+            order.OrderStatus = orderDetails.OrderStatus;
+            order.OrderType = orderDetails.OrderType;
+            order.OrderValue = orderDetails.OrderValue;
+            return order;
         }
     }
 }

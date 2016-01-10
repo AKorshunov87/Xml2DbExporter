@@ -7,6 +7,7 @@ using System.Data.SqlClient;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
+using System.IO;
 
 namespace Xml2DbExporter.Export {
     /// <summary>
@@ -32,6 +33,14 @@ namespace Xml2DbExporter.Export {
             set { xmlFilePath = value; }
         }
 
+        /// <summary>
+        /// Database connection string
+        /// </summary>
+        public string ConnectionString {
+            get { return connectionString; }
+            set { connectionString = value; }
+        }
+
         #endregion
 
         #region Events
@@ -45,10 +54,11 @@ namespace Xml2DbExporter.Export {
 
         #region Constructors
         /// <summary>
-        /// Default constructor without setting of the xml file path
+        /// Default constructor without any settings
         /// </summary>
         public Exporter() {
             this.xmlFilePath = String.Empty;
+            this.connectionString = String.Empty;
             InitializeXmlReaderSettings();
             InitializeExportWorker();
         }
@@ -57,8 +67,10 @@ namespace Xml2DbExporter.Export {
         /// Constructor with the xml file path set
         /// </summary>
         /// <param name="xmlFilePath">Path to the Xml File for export</param>
-        public Exporter(string xmlFilePath) : base() {
+        /// <param name="connectionString">Connection string to the DataBase</param>
+        public Exporter(string xmlFilePath, string connectionString) : base() {
             this.xmlFilePath = xmlFilePath;
+            this.connectionString = connectionString;
         }
 
         #endregion
@@ -68,11 +80,14 @@ namespace Xml2DbExporter.Export {
         /// Export Xml file data to DataBase Order table
         /// </summary>
         public void Export() {
-            exportWorker.RunWorkerAsync();
+            if (FileAndConnectionIsOk())
+                exportWorker.RunWorkerAsync();
         }
 
         #endregion
 
+        #region Helpers
+        
         #region Initialization
         void InitializeExportWorker() {
             this.exportWorker = new BackgroundWorker();
@@ -89,10 +104,7 @@ namespace Xml2DbExporter.Export {
             this.xmlReaderSettings.ValidationType = ValidationType.Schema;
             this.xmlReaderSettings.ValidationEventHandler += new ValidationEventHandler(XmlValidationHandler);
         }
-
         #endregion
-
-        #region Helpers
 
         #region Export
         void ExportXml(object sender, DoWorkEventArgs e) {
@@ -108,8 +120,9 @@ namespace Xml2DbExporter.Export {
                         OrderModel order = ordersFromXml.ToOrder(orderDetailsFromXml[i]);
                         int progressPercentage = Convert.ToInt32(i / orderDetailsFromXml.Length * 70);
                         ExportProgressChangedEventArgs progressArgs = null;
-                        if (IsDuplicateOrder(order.OrderValue)) {
-                            progressArgs = new ExportProgressChangedEventArgs(ExportProgressType.DuplicateRecordFound, progressPercentage, order.ToString());
+                        OrderModel duplicateOrder = SelectDuplicateOrder(order.OrderValue);
+                        if (duplicateOrder != null) {
+                            progressArgs = new ExportProgressChangedEventArgs(ExportProgressType.DuplicateRecordFound, progressPercentage, duplicateOrder.ToString());
                         }
                         else {
                             InsertOrderRecord(order);
@@ -132,6 +145,23 @@ namespace Xml2DbExporter.Export {
             ExportProgressChangedEventArgs args = e.UserState as ExportProgressChangedEventArgs;
             if (args != null)
                 OnExportProgressChanged(args);
+        }
+
+        bool FileAndConnectionIsOk() {
+            string ext = Path.GetExtension(xmlFilePath);
+            bool isOk = ext == ".xml";
+            if (!isOk)
+                OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ExportCancelled, 0, "Xml File path is incorrect."));
+
+            try {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                    connection.Open();
+            }
+            catch (SqlException) {
+                OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ExportCancelled, 0, "Database connection string is incorrect."));
+                isOk = false;
+            }
+            return isOk;
         }
         #endregion
 
@@ -173,20 +203,30 @@ namespace Xml2DbExporter.Export {
             }
         }
 
-        bool IsDuplicateOrder(string orderValue) {
-            bool isDuplicate = false;
+        OrderModel SelectDuplicateOrder(string orderValue) {
+            OrderModel order = null;
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                string commandText = "SELECT * FROM Order WHERE OrderValue=@orderValue";
+                string commandText = "SELECT TOP 1 * FROM Order WHERE OrderValue=@orderValue";
                 SqlCommand command = new SqlCommand(commandText);
                 command.CommandType = CommandType.Text;
                 command.Connection = connection;
                 command.Parameters.AddWithValue("@orderValue", orderValue);
                 connection.Open();
                 using (SqlDataReader dataReader = command.ExecuteReader()) {
-                    isDuplicate = dataReader.HasRows;
+                    while (dataReader.Read()) {
+                        order = new OrderModel();
+                        order.OrderID = Convert.ToInt64(dataReader["OrderID"]);
+                        order.CustomerID = Convert.ToInt32(dataReader["CustomerID"]);
+                        order.DateTimeAdded = Convert.ToDateTime(dataReader["DateTimeAdded"]);
+                        order.DateTimeUpdated = Convert.ToDateTime(dataReader["DataTimeUpdated"]);
+                        order.OrderDate = Convert.ToDateTime(dataReader["OrderDate"]);
+                        order.OrderStatus = Convert.ToInt32(dataReader["OrderStatus"]);
+                        order.OrderType = Convert.ToInt32(dataReader["OrderType"]);
+                        order.OrderValue = dataReader["OrderValue"].ToString();
+                    }
                 }
             }
-            return isDuplicate;
+            return order;
         }
         #endregion
 

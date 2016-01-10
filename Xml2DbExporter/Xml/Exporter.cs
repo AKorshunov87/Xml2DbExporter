@@ -33,6 +33,15 @@ namespace Xml2DbExporter.Xml {
 
         #endregion
 
+        #region Events
+
+        /// <summary>
+        /// Fires every time when export progress changed or exporter have message to report
+        /// </summary>
+        public event ExportProgressChangedEventHandler ExportProgressChanged;
+
+        #endregion
+
         #region Constructors
         /// <summary>
         /// Default constructor without setting of the xml file path
@@ -72,7 +81,7 @@ namespace Xml2DbExporter.Xml {
             this.exportWorker.WorkerSupportsCancellation = true;
             this.exportWorker.DoWork += new DoWorkEventHandler(ExportXml);
             this.exportWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(ExportComplete);
-            this.exportWorker.ProgressChanged += new ProgressChangedEventHandler(ExportProgressChanged);
+            this.exportWorker.ProgressChanged += new ProgressChangedEventHandler(ProgressChanged);
         }
 
         void InitializeXmlReaderSettings() {
@@ -85,6 +94,8 @@ namespace Xml2DbExporter.Xml {
         #endregion
 
         #region Helpers
+
+        #region Export
         void ExportXml(object sender, DoWorkEventArgs e) {
             Orders ordersFromXml = ParseXml();
             ExportOrdersToDataBase(ordersFromXml);
@@ -96,18 +107,57 @@ namespace Xml2DbExporter.Xml {
                 if (orderDetailsFromXml != null) {
                     for (int i = 0; i < orderDetailsFromXml.Length; i++) {
                         OrderModel order = ordersFromXml.ToOrder(orderDetailsFromXml[i]);
+                        int progressPercentage = Convert.ToInt32(i / orderDetailsFromXml.Length * 70);
+                        ExportProgressChangedEventArgs progressArgs = null;
                         if (IsDuplicateOrder(order.OrderValue)) {
-                            exportWorker.ReportProgress(i / orderDetailsFromXml.Length * 70, "Object with detailed info about duplicate");
+                            progressArgs = new ExportProgressChangedEventArgs(ExportProgressType.DuplicateRecordFound, progressPercentage, order.ToString());
                         }
                         else {
                             InsertOrderRecord(order);
-                            exportWorker.ReportProgress(i / orderDetailsFromXml.Length * 70, "Object with detailed info about inserted record");
+                            progressArgs = new ExportProgressChangedEventArgs(ExportProgressType.RecordInserted, progressPercentage);
                         }
+                        exportWorker.ReportProgress(progressPercentage, progressArgs);
                     }
                 }
             }
         }
 
+        void ExportComplete(object sender, RunWorkerCompletedEventArgs e) {
+            if (e.Cancelled)
+                OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ExportCancelled, 100, "Export was cancelled!"));
+            else
+                OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ExportCompleted, 100, "Export was completed successfully!"));
+        }
+
+        void ProgressChanged(object sender, ProgressChangedEventArgs e) {
+            ExportProgressChangedEventArgs args = e.UserState as ExportProgressChangedEventArgs;
+            if (args != null)
+                OnExportProgressChanged(args);
+        }
+        #endregion
+
+        #region Xml Parse
+        Orders ParseXml() {
+            XmlSerializer serializer = new XmlSerializer(typeof(Orders));
+            Orders ordersFromXml = null;
+            using (XmlReader reader = XmlReader.Create(xmlFilePath, xmlReaderSettings)) {
+                ordersFromXml = serializer.Deserialize(reader) as Orders;
+            }
+
+            // Report to UI after parse and deserialization ends
+            exportWorker.ReportProgress(30, new ExportProgressChangedEventArgs(ExportProgressType.ParseXmlCompleted, 30, "Xml parsing was completed successfully."));
+            return ordersFromXml;
+        }
+
+        void XmlValidationHandler(object sender, ValidationEventArgs e) {
+            if (e.Severity == XmlSeverityType.Warning)
+                OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ParseXmlWarning, 0, String.Format("Warning: {0}", e.Message)));
+            else if (e.Severity == XmlSeverityType.Error)
+                OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ParseXmlError, 0, String.Format("Error: {0}", e.Message)));
+        }
+        #endregion
+
+        #region DataBase
         void InsertOrderRecord(OrderModel order) {
             using (SqlConnection connection = new SqlConnection(connectionString)) {
                 string commandText = "INSERT INTO Order (CustomerID, OrderDate, OrderValue, OrderStatus, OrderType) VALUES (@CustomerID, @OrderDate, @OrderValue, @OrderStatus, @OrderType)";
@@ -139,39 +189,16 @@ namespace Xml2DbExporter.Xml {
             }
             return isDuplicate;
         }
-
-        Orders ParseXml() {
-            XmlSerializer serializer = new XmlSerializer(typeof(Orders));
-            Orders ordersFromXml = null;
-            using (XmlReader reader = XmlReader.Create(xmlFilePath, xmlReaderSettings)) {
-                ordersFromXml = serializer.Deserialize(reader) as Orders;
-            }
-            // Report to UI after parse and deserialization ends
-            exportWorker.ReportProgress(30, "some object with report message");
-            return ordersFromXml;
-        }
-
-        void ExportComplete(object sender, RunWorkerCompletedEventArgs e) {
-            // public ExportCompleteEvent fire - send Complete or Cancel Message -> on ui save duplicate to file(csv)
-        }
-
-        void ExportProgressChanged(object sender, ProgressChangedEventArgs e) {
-            // public ExportProgressChangedEvent fire -> depends on object type(e.g. Duplicate or Inserted or any other) UI will changes
-        }
-
-        void XmlValidationHandler(object sender, ValidationEventArgs e) {
-            string message;
-            if (e.Severity == XmlSeverityType.Warning) {
-                message = String.Format("Warning: {0}", e.Message);
-            }
-            else if (e.Severity == XmlSeverityType.Error) {
-                message = String.Format("Error: {0}", e.Message);
-            }
-            // some kind of report to UI
-            // RaiseXmlValidationEvent(message);
-        }
-
         #endregion
 
+        #region Events
+        protected virtual void OnExportProgressChanged(ExportProgressChangedEventArgs e) {
+            ExportProgressChangedEventHandler handler = ExportProgressChanged;
+            if (handler != null)
+                handler(this, e);
+        }
+        #endregion
+
+        #endregion
     }
 }

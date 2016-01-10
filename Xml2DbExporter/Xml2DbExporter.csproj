@@ -55,6 +55,8 @@
     </ApplicationDefinition>
     <Compile Include="Data\OrderModel.cs" />
     <Compile Include="Xml\Exporter.cs" />
+    <Compile Include="Xml\ExportProgressChangedEventArgs.cs" />
+    <Compile Include="Xml\ExportProgressType.cs" />
     <Compile Include="Xml\OrderDetails.cs" />
     <Compile Include="Xml\Orders.cs" />
     <Page Include="MainWindow.xaml">

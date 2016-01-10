@@ -1,4 +1,4 @@
-﻿namespace Xml2DbExporter.Xml {
+﻿namespace Xml2DbExporter.Export {
     public enum ExportProgressType {
         ParseXmlError,
         ParseXmlWarning,

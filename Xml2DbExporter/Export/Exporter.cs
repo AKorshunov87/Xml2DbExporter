@@ -1,13 +1,14 @@
-﻿using System;
+﻿using Xml2DbExporter.Data;
+using Xml2DbExporter.Xml;
+using System;
 using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using Xml2DbExporter.Data;
 
-namespace Xml2DbExporter.Xml {
+namespace Xml2DbExporter.Export {
     /// <summary>
     /// Provides ability to export data from xml to DataBase
     /// </summary>
@@ -67,8 +68,6 @@ namespace Xml2DbExporter.Xml {
         /// Export Xml file data to DataBase Order table
         /// </summary>
         public void Export() {
-            // Report to UI that parsing of xml starts
-            // exportWorker.ReportProgress(0, "some object with report message");
             exportWorker.RunWorkerAsync();
         }
 

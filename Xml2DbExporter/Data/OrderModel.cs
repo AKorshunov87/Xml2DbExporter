@@ -21,5 +21,9 @@ namespace Xml2DbExporter.Data {
         public DateTime? DateTimeUpdated { get; set; }
 
         public int OrderType { get; set; }
+
+        public override string ToString() {
+            return String.Format("CustomerID: {0}; OrderDate: {1}; OrderValue: {2}; OrderStatus: {3}; OrderType: {4};", CustomerID, OrderDate, OrderValue, OrderStatus, OrderType);
+        }
     }
 }

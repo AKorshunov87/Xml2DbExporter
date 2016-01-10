@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Xml2DbExporter.Xml {
+namespace Xml2DbExporter.Export {
     /// <summary>
     /// Class that uses for reports about export progress change from Exporter to UI
     /// </summary>

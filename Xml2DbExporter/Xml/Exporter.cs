@@ -1,5 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Data;
+using System.Data.SqlClient;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
@@ -16,6 +18,7 @@ namespace Xml2DbExporter.Xml {
         string xmlFilePath;
         XmlReaderSettings xmlReaderSettings;
         BackgroundWorker exportWorker;
+        string connectionString;
 
         #endregion
 
@@ -92,20 +95,49 @@ namespace Xml2DbExporter.Xml {
                 OrderDetails[] orderDetailsFromXml = ordersFromXml.OrderDetailsList;
                 if (orderDetailsFromXml != null) {
                     for (int i = 0; i < orderDetailsFromXml.Length; i++) {
-                        // Creating order for Order Table using OrderModel
                         OrderModel order = ordersFromXml.ToOrder(orderDetailsFromXml[i]);
-
-                        if (true) {// connect to db Order Table and check if there any records with the same OrderValue) {
-                            // Connect to Database and Insert New Record with unique OrderValue
-                            exportWorker.ReportProgress(i / orderDetailsFromXml.Length * 70, "Object with detailed info about inserted record");
+                        if (IsDuplicateOrder(order.OrderValue)) {
+                            exportWorker.ReportProgress(i / orderDetailsFromXml.Length * 70, "Object with detailed info about duplicate");
                         }
                         else {
-                            // report record with duplicate OrderValue to UI
-                            exportWorker.ReportProgress(i / orderDetailsFromXml.Length * 70, "Object with detailed info about duplicate");
+                            InsertOrderRecord(order);
+                            exportWorker.ReportProgress(i / orderDetailsFromXml.Length * 70, "Object with detailed info about inserted record");
                         }
                     }
                 }
             }
+        }
+
+        void InsertOrderRecord(OrderModel order) {
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                string commandText = "INSERT INTO Order (CustomerID, OrderDate, OrderValue, OrderStatus, OrderType) VALUES (@CustomerID, @OrderDate, @OrderValue, @OrderStatus, @OrderType)";
+                SqlCommand command = new SqlCommand(commandText);
+                command.CommandType = CommandType.Text;
+                command.Connection = connection;
+                command.Parameters.AddWithValue("@CustomerID", order.CustomerID);
+                command.Parameters.AddWithValue("@OrderDate", order.OrderDate);
+                command.Parameters.AddWithValue("@OrderValue", order.OrderValue);
+                command.Parameters.AddWithValue("@OrderStatus", order.OrderStatus);
+                command.Parameters.AddWithValue("@OrderType", order.OrderType);
+                connection.Open();
+                command.ExecuteNonQuery();
+            }
+        }
+
+        bool IsDuplicateOrder(string orderValue) {
+            bool isDuplicate = false;
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                string commandText = "SELECT * FROM Order WHERE OrderValue=@orderValue";
+                SqlCommand command = new SqlCommand(commandText);
+                command.CommandType = CommandType.Text;
+                command.Connection = connection;
+                command.Parameters.AddWithValue("@orderValue", orderValue);
+                connection.Open();
+                using (SqlDataReader dataReader = command.ExecuteReader()) {
+                    isDuplicate = dataReader.HasRows;
+                }
+            }
+            return isDuplicate;
         }
 
         Orders ParseXml() {

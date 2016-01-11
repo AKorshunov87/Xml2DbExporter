@@ -4,7 +4,7 @@
         Title="Export from file to database" Height="568" Width="752">
     <Grid>
         <Label Content="Orders In DataBase" HorizontalAlignment="Center" Margin="0,75,0,0" VerticalAlignment="Top"/>
-        <DataGrid AutoGenerateColumns="True" Name="DGOrders" CanUserResizeColumns="True" IsReadOnly="True" ItemsSource="{Binding Source=DuplicatesRows}" Margin="0,106,0,0" VerticalAlignment="Top" HorizontalAlignment="Stretch" Height="123" HorizontalScrollBarVisibility="Disabled">
+        <DataGrid AutoGenerateColumns="True" Name="dgOrders" CanUserResizeColumns="True" IsReadOnly="True" ItemsSource="{Binding Source=OrdersFromDBRows}" Margin="0,106,0,0" VerticalAlignment="Top" HorizontalAlignment="Stretch" Height="123" HorizontalScrollBarVisibility="Disabled">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="CustomerID" Binding="{Binding CustomerID}" Width="0.15*" />
                 <DataGridTextColumn Header="OrderDate" Binding="{Binding OrderDate}" Width="0.15*" />
@@ -15,7 +15,7 @@
         </DataGrid>
 
         <Label Content="Inserted Orders" HorizontalAlignment="Center" Margin="0,232,0,0" VerticalAlignment="Top"/>
-        <DataGrid AutoGenerateColumns="True" Name="DGInserted" CanUserResizeColumns="True" IsReadOnly="True" ItemsSource="{Binding Source=DuplicatesRows}" Margin="0,262,0,0" VerticalAlignment="Top" HorizontalAlignment="Stretch" Height="123" HorizontalScrollBarVisibility="Disabled">
+        <DataGrid AutoGenerateColumns="True" Name="dgInserted" CanUserResizeColumns="True" IsReadOnly="True" ItemsSource="{Binding Source=InsertedRows}" Margin="0,262,0,0" VerticalAlignment="Top" HorizontalAlignment="Stretch" Height="123" HorizontalScrollBarVisibility="Disabled">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="CustomerID" Binding="{Binding CustomerID}" Width="0.15*" />
                 <DataGridTextColumn Header="OrderDate" Binding="{Binding OrderDate}" Width="0.15*" />
@@ -26,7 +26,7 @@
         </DataGrid>
 
         <Label Content="Duplicate Orders" HorizontalAlignment="Center" Margin="0,385,0,0" VerticalAlignment="Top"/>
-        <DataGrid AutoGenerateColumns="True" Name="DGDuplicates" CanUserResizeColumns="True" IsReadOnly="True" ItemsSource="{Binding Source=DuplicatesRows}" Margin="0,415,0,0" HorizontalAlignment="Stretch" HorizontalScrollBarVisibility="Disabled">
+        <DataGrid AutoGenerateColumns="True" Name="dgDuplicates" CanUserResizeColumns="True" IsReadOnly="True" ItemsSource="{Binding Source=DuplicatesRows}" Margin="0,415,0,0" HorizontalAlignment="Stretch" HorizontalScrollBarVisibility="Disabled">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="CustomerID" Binding="{Binding CustomerID}" Width="0.15*" />
                 <DataGridTextColumn Header="OrderDate" Binding="{Binding OrderDate}" Width="0.15*" />
@@ -35,12 +35,12 @@
                 <DataGridTextColumn Header="OrderType" Binding="{Binding OrderType}" Width="0.15*" />
             </DataGrid.Columns>
         </DataGrid>
-        <ProgressBar Height="28" Margin="10,47,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="448"/>
+        <ProgressBar Name="PBExport" Height="28" Margin="10,47,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="448"/>
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Name="Scroller" Height="65" Margin="463,10,10,0" VerticalAlignment="Top" >
-            <TextBlock Height="{Binding ElementName=Scroller}" TextWrapping="Wrap" Text="Export Log: " MinHeight="65" VerticalAlignment="Top" />
+            <TextBlock Name="txtBlockExportLog" Height="{Binding ElementName=Scroller}" TextWrapping="Wrap" Text="Export Log: " MinHeight="65" VerticalAlignment="Top" />
         </ScrollViewer>
-        <TextBox Height="23" Margin="10,10,0,0" TextWrapping="Wrap" Text="Xml file path" VerticalAlignment="Top" HorizontalAlignment="Left" Width="259" />
-        <Button Content="Browse..." HorizontalAlignment="Left" Margin="274,11,0,0" VerticalAlignment="Top" Width="75"/>
-        <Button Content="Export To DB" HorizontalAlignment="Left" Margin="364,11,0,0" VerticalAlignment="Top" Width="94"/>
+        <TextBox Name="txtBoxXmlFilePath" Height="23" Margin="10,10,0,0" TextWrapping="Wrap" Text="Xml file path" VerticalAlignment="Top" HorizontalAlignment="Left" Width="259" />
+        <Button Name="btnBrowse" Content="Browse..." HorizontalAlignment="Left" Margin="274,11,0,0" VerticalAlignment="Top" Width="75" Click="btnBrowse_Click"/>
+        <Button Name="btnExport" Content="Export To DB"  HorizontalAlignment="Left" Margin="364,11,0,0" VerticalAlignment="Top" Width="94" Click="btnExport_Click" />
     </Grid>
 </Window>

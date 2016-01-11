@@ -41,6 +41,11 @@ namespace Xml2DbExporter.Export {
             set { connectionString = value; }
         }
 
+        /// <summary>
+        /// Gets exporter status
+        /// </summary>
+        public bool IsBusy { get { return exportWorker.IsBusy; } }
+
         #endregion
 
         #region Events
@@ -80,10 +85,17 @@ namespace Xml2DbExporter.Export {
         /// Export Xml file data to DataBase Order table
         /// </summary>
         public void Export() {
-            if (FileAndConnectionIsOk())
+            if (FileAndConnectionIsOk() && !exportWorker.IsBusy)
                 exportWorker.RunWorkerAsync();
         }
 
+        /// <summary>
+        /// Cancel export to DataBase
+        /// </summary>
+        public void CancelExport() {
+            if (exportWorker.IsBusy)
+                exportWorker.CancelAsync();
+        }
         #endregion
 
         #region Helpers
@@ -91,11 +103,11 @@ namespace Xml2DbExporter.Export {
         #region Initialization
         void InitializeExportWorker() {
             this.exportWorker = new BackgroundWorker();
-            this.exportWorker.WorkerReportsProgress = true;
+            //this.exportWorker.WorkerReportsProgress = true;
             this.exportWorker.WorkerSupportsCancellation = true;
             this.exportWorker.DoWork += new DoWorkEventHandler(ExportXml);
             this.exportWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(ExportComplete);
-            this.exportWorker.ProgressChanged += new ProgressChangedEventHandler(ProgressChanged);
+            //this.exportWorker.ProgressChanged += new ProgressChangedEventHandler(ProgressChanged);
         }
 
         void InitializeXmlReaderSettings() {
@@ -122,13 +134,14 @@ namespace Xml2DbExporter.Export {
                         ExportProgressChangedEventArgs progressArgs = null;
                         OrderModel duplicateOrder = SelectDuplicateOrder(order.OrderValue);
                         if (duplicateOrder != null) {
-                            progressArgs = new ExportProgressChangedEventArgs(ExportProgressType.DuplicateRecordFound, progressPercentage, duplicateOrder.ToString());
+                            progressArgs = new ExportProgressChangedEventArgs(ExportProgressType.DuplicateRecordFound, progressPercentage, duplicateOrder);
                         }
                         else {
                             InsertOrderRecord(order);
-                            progressArgs = new ExportProgressChangedEventArgs(ExportProgressType.RecordInserted, progressPercentage);
+                            progressArgs = new ExportProgressChangedEventArgs(ExportProgressType.RecordInserted, progressPercentage, order);
                         }
-                        exportWorker.ReportProgress(progressPercentage, progressArgs);
+                        OnExportProgressChanged(progressArgs);
+                        //exportWorker.ReportProgress(progressPercentage, progressArgs);
                     }
                 }
             }
@@ -136,16 +149,16 @@ namespace Xml2DbExporter.Export {
 
         void ExportComplete(object sender, RunWorkerCompletedEventArgs e) {
             if (e.Cancelled)
-                OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ExportCancelled, 100, "Export was cancelled!"));
+                OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ExportCancelled, 0, "Export was cancelled!"));
             else
                 OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ExportCompleted, 100, "Export was completed successfully!"));
         }
 
-        void ProgressChanged(object sender, ProgressChangedEventArgs e) {
-            ExportProgressChangedEventArgs args = e.UserState as ExportProgressChangedEventArgs;
-            if (args != null)
-                OnExportProgressChanged(args);
-        }
+        //void ProgressChanged(object sender, ProgressChangedEventArgs e) {
+        //    ExportProgressChangedEventArgs args = e.UserState as ExportProgressChangedEventArgs;
+        //    if (args != null)
+        //        OnExportProgressChanged(args);
+        //}
 
         bool FileAndConnectionIsOk() {
             string ext = Path.GetExtension(xmlFilePath);
@@ -174,7 +187,8 @@ namespace Xml2DbExporter.Export {
             }
 
             // Report to UI after parse and deserialization ends
-            exportWorker.ReportProgress(30, new ExportProgressChangedEventArgs(ExportProgressType.ParseXmlCompleted, 30, "Xml parsing was completed successfully."));
+            OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ParseXmlCompleted, 30, "Xml parsing was completed successfully."));
+            // exportWorker.ReportProgress(30, new ExportProgressChangedEventArgs(ExportProgressType.ParseXmlCompleted, 30, "Xml parsing was completed successfully."));
             return ordersFromXml;
         }
 
@@ -206,7 +220,7 @@ namespace Xml2DbExporter.Export {
         OrderModel SelectDuplicateOrder(string orderValue) {
             OrderModel order = null;
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                string commandText = "SELECT TOP 1 * FROM Order WHERE OrderValue=@orderValue";
+                string commandText = "SELECT TOP 1 * FROM [testdb].[dbo].[Order] WHERE OrderValue=@orderValue";
                 SqlCommand command = new SqlCommand(commandText);
                 command.CommandType = CommandType.Text;
                 command.Connection = connection;

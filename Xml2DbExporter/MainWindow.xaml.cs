@@ -3,25 +3,26 @@ using Xml2DbExporter.Export;
 using Microsoft.Win32;
 using System;
 using System.Windows;
-using System.Collections.ObjectModel;
 using System.Configuration;
 using System.Data.SqlClient;
 using System.Data;
+using System.ComponentModel;
 
 namespace Xml2DbExporter {
     public partial class MainWindow : Window {
 
         readonly string connectionString = ConfigurationManager.ConnectionStrings["TestDataBase"].ConnectionString;
         Exporter exporter;
-        ObservableCollection<OrderModel> duplicatesRows = new ObservableCollection<OrderModel>();
-        ObservableCollection<OrderModel> ordersFromDBRows = new ObservableCollection<OrderModel>();
-        ObservableCollection<OrderModel> insertedRows = new ObservableCollection<OrderModel>();
+        BindingList<OrderModel> duplicatesRows = new BindingList<OrderModel>();
+        BindingList<OrderModel> ordersFromDBRows = new BindingList<OrderModel>();
+        BindingList<OrderModel> insertedRows = new BindingList<OrderModel>();
 
         public MainWindow() {
             InitializeComponent();
-            dgOrders.DataContext = ordersFromDBRows;
-            dgInserted.DataContext = insertedRows;
-            dgDuplicates.DataContext = duplicatesRows;
+            InitializeLists();
+            dgOrders.ItemsSource = ordersFromDBRows;
+            dgInserted.ItemsSource = insertedRows;
+            dgDuplicates.ItemsSource = duplicatesRows;
             LoadOrdersFromDB();
             exporter = new Exporter();
             exporter.ExportProgressChanged += new ExportProgressChangedEventHandler(ExportProgressChanged);
@@ -48,6 +49,9 @@ namespace Xml2DbExporter {
                 PBExport.Value = 0;
                 duplicatesRows.Clear();
                 insertedRows.Clear();
+                ordersFromDBRows.RaiseListChangedEvents = false;
+                duplicatesRows.RaiseListChangedEvents = false;
+                insertedRows.RaiseListChangedEvents = false;
                 exporter.XmlFilePath = txtBoxXmlFilePath.Text;
                 exporter.ConnectionString = connectionString;
                 ExportButtonEnable(false);
@@ -72,6 +76,7 @@ namespace Xml2DbExporter {
                         txtBlockExportLog.Text = String.Format("{0}\n{1}", txtBlockExportLog.Text, e.UserState.ToString());
                         PBExport.Value = e.ProgressPercentage;
                         ExportButtonEnable(true);
+                        UpdateUI();
                         break;
                     default:
                         PBExport.Value = e.ProgressPercentage;
@@ -84,6 +89,27 @@ namespace Xml2DbExporter {
         void ExportButtonEnable(bool enable) {
             btnExport.Content = enable ? "Export To DB" : "Cancel Export";
             btnBrowse.IsEnabled = enable;
+        }
+
+        void UpdateUI() {
+            ordersFromDBRows.RaiseListChangedEvents = true;
+            duplicatesRows.RaiseListChangedEvents = true;
+            insertedRows.RaiseListChangedEvents = true;
+            ordersFromDBRows.ResetBindings();
+            duplicatesRows.ResetBindings();
+            insertedRows.ResetBindings();
+        }
+
+        void InitializeLists() {
+            ordersFromDBRows.AllowNew = true;
+            duplicatesRows.AllowNew = true;
+            insertedRows.AllowNew = true;
+            ordersFromDBRows.AllowEdit = false;
+            duplicatesRows.AllowEdit = false;
+            insertedRows.AllowEdit = false;
+            ordersFromDBRows.AllowRemove = false;
+            duplicatesRows.AllowRemove = false;
+            insertedRows.AllowRemove = false;
         }
 
         void LoadOrdersFromDB() {

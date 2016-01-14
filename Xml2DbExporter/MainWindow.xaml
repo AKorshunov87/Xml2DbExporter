@@ -4,7 +4,7 @@
         Title="Export from file to database" Height="568" Width="752">
     <Grid>
         <Label Content="Orders In DataBase" HorizontalAlignment="Center" Margin="0,75,0,0" VerticalAlignment="Top"/>
-        <DataGrid AutoGenerateColumns="False" CanUserAddRows="True" ItemsSource="{Binding}" Name="dgOrders" CanUserResizeColumns="True" IsReadOnly="True"  Margin="0,106,0,0" VerticalAlignment="Top" HorizontalAlignment="Stretch" Height="123" HorizontalScrollBarVisibility="Disabled">
+        <DataGrid AutoGenerateColumns="False" CanUserAddRows="True" Name="dgOrders" CanUserResizeColumns="True" IsReadOnly="True"  Margin="0,106,0,0" VerticalAlignment="Top" HorizontalAlignment="Stretch" Height="123" HorizontalScrollBarVisibility="Disabled">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="CustomerID" Binding="{Binding CustomerID}" Width="0.15*" />
                 <DataGridTextColumn Header="OrderDate" Binding="{Binding OrderDate}" Width="0.15*" />
@@ -15,7 +15,7 @@
         </DataGrid>
 
         <Label Content="Inserted Orders" HorizontalAlignment="Center" Margin="0,232,0,0" VerticalAlignment="Top"/>
-        <DataGrid AutoGenerateColumns="False" CanUserAddRows="True" Name="dgInserted" CanUserResizeColumns="True" IsReadOnly="True" ItemsSource="{Binding}" Margin="0,262,0,0" VerticalAlignment="Top" HorizontalAlignment="Stretch" Height="123" HorizontalScrollBarVisibility="Disabled">
+        <DataGrid AutoGenerateColumns="False" CanUserAddRows="True" Name="dgInserted" CanUserResizeColumns="True" IsReadOnly="True" Margin="0,262,0,0" VerticalAlignment="Top" HorizontalAlignment="Stretch" Height="123" HorizontalScrollBarVisibility="Disabled">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="CustomerID" Binding="{Binding CustomerID}" Width="0.15*" />
                 <DataGridTextColumn Header="OrderDate" Binding="{Binding OrderDate}" Width="0.15*" />
@@ -26,7 +26,7 @@
         </DataGrid>
 
         <Label Content="Duplicate Orders" HorizontalAlignment="Center" Margin="0,385,0,0" VerticalAlignment="Top"/>
-        <DataGrid AutoGenerateColumns="False"  CanUserAddRows="True" Name="dgDuplicates" CanUserResizeColumns="True" IsReadOnly="True" ItemsSource="{Binding}" Margin="0,415,0,0" HorizontalAlignment="Stretch" HorizontalScrollBarVisibility="Disabled">
+        <DataGrid AutoGenerateColumns="False"  CanUserAddRows="True" Name="dgDuplicates" CanUserResizeColumns="True" IsReadOnly="True" Margin="0,415,0,0" HorizontalAlignment="Stretch" HorizontalScrollBarVisibility="Disabled">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="CustomerID" Binding="{Binding CustomerID}" Width="0.15*" />
                 <DataGridTextColumn Header="OrderDate" Binding="{Binding OrderDate}" Width="0.15*" />

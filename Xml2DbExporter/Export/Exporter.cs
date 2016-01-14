@@ -121,29 +121,31 @@ namespace Xml2DbExporter.Export {
             Orders ordersFromXml = ParseXml();
             if (ordersFromXml != null) {
                 OrderDetails[] orderDetailsFromXml = ordersFromXml.OrderDetailsList;
-                // Prepare Duplicates.csv file
-                File.WriteAllText("Duplicates.csv", "CustomerID,OrderDate,OrderValue,OrderStatus,OrderType");
-                if (orderDetailsFromXml != null) {
-                    for (int i = 0; i < orderDetailsFromXml.Length; i++) {
-                        if (exportWorker.CancellationPending) {
-                            e.Cancel = true;
-                            return;
+                using (FileStream stream = new FileStream("Duplicates.csv", FileMode.Create)) {
+                    StreamWriter streamWriter = new StreamWriter(stream);
+                    streamWriter.Write("CustomerID,OrderDate,OrderValue,OrderStatus,OrderType");
+                    if (orderDetailsFromXml != null) {
+                        for (int i = 0; i < orderDetailsFromXml.Length; i++) {
+                            if (exportWorker.CancellationPending) {
+                                e.Cancel = true;
+                                break;
+                            }
+                            OrderModel order = ordersFromXml.ToOrder(orderDetailsFromXml[i]);
+                            int progressPercentage = 10 + Convert.ToInt32((float)i / (float)orderDetailsFromXml.Length * 90);
+                            ExportProgressChangedEventArgs progressArgs = null;
+                            OrderModel duplicateOrder = SelectDuplicateOrder(order.OrderValue);
+                            if (duplicateOrder != null) {
+                                progressArgs = new ExportProgressChangedEventArgs(ExportProgressType.DuplicateRecordFound, progressPercentage, duplicateOrder);
+                                // Save Duplicate order to CSV file
+                                string content = String.Format("\n{0},{1},{2},{3},{4}", duplicateOrder.CustomerID, duplicateOrder.OrderDate, duplicateOrder.OrderValue, duplicateOrder.OrderStatus, duplicateOrder.OrderType);
+                                streamWriter.Write(content);
+                            }
+                            else {
+                                InsertOrderRecord(order);
+                                progressArgs = new ExportProgressChangedEventArgs(ExportProgressType.RecordInserted, progressPercentage, order);
+                            }
+                            OnExportProgressChanged(progressArgs);
                         }
-                        OrderModel order = ordersFromXml.ToOrder(orderDetailsFromXml[i]);
-                        int progressPercentage = 30 + Convert.ToInt32((float)i / (float)orderDetailsFromXml.Length * 70);
-                        ExportProgressChangedEventArgs progressArgs = null;
-                        OrderModel duplicateOrder = SelectDuplicateOrder(order.OrderValue);
-                        if (duplicateOrder != null) {
-                            progressArgs = new ExportProgressChangedEventArgs(ExportProgressType.DuplicateRecordFound, progressPercentage, duplicateOrder);
-                            // Save Duplicate order to CSV file
-                            string content = String.Format("{0},{1},{2},{3},{4}",duplicateOrder.CustomerID, duplicateOrder.OrderDate, duplicateOrder.OrderValue, duplicateOrder.OrderStatus, duplicateOrder.OrderType);
-                            File.AppendAllText("Duplicates.csv", content);
-                        }
-                        else {
-                            InsertOrderRecord(order);
-                            progressArgs = new ExportProgressChangedEventArgs(ExportProgressType.RecordInserted, progressPercentage, order);
-                        }
-                        OnExportProgressChanged(progressArgs);
                     }
                 }
             }
@@ -184,12 +186,12 @@ namespace Xml2DbExporter.Export {
                 }
             }
             catch (Exception ex) {
-                OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ParseXmlError, 30, String.Format("Xml parsing Error: {0}", ex.Message)));
+                OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ParseXmlError, 0, String.Format("Xml parsing Error: {0}", ex.Message)));
                 exportWorker.CancelAsync();
             }
 
             // Report to UI after parse and deserialization ends
-            OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ParseXmlCompleted, 30, "Xml parsing was completed successfully."));
+            OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ParseXmlCompleted, 10, "Xml parsing was completed successfully."));
             return ordersFromXml;
         }
 

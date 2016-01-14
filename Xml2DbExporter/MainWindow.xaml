@@ -36,7 +36,7 @@
             </DataGrid.Columns>
         </DataGrid>
         <ProgressBar Name="PBExport" Height="28" Margin="10,47,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="448" />
-        <TextBlock Text="{Binding ElementName=PBExport, Path=Value, StringFormat=' {0}%'}" Margin="217,50,0,0" Height="20" VerticalAlignment="Top" HorizontalAlignment="Left" Width="20"/>
+        <TextBlock Text="{Binding ElementName=PBExport, Path=Value, StringFormat=' {0}%'}" Margin="217,50,0,0" Height="20" VerticalAlignment="Top" HorizontalAlignment="Left" Width="40"/>
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Name="Scroller" Height="65" Margin="463,10,10,0" VerticalAlignment="Top" >
             <TextBlock Name="txtBlockExportLog" Height="{Binding ElementName=Scroller}" TextWrapping="Wrap" Text="Export Log: " MinHeight="65" VerticalAlignment="Top" />
         </ScrollViewer>

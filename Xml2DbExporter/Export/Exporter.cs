@@ -119,14 +119,14 @@ namespace Xml2DbExporter.Export {
         #region Export
         void ExportXml(object sender, DoWorkEventArgs e) {
             Orders ordersFromXml = ParseXml();
-            ExportOrdersToDataBase(ordersFromXml);
-        }
-
-        void ExportOrdersToDataBase(Orders ordersFromXml) {
             if (ordersFromXml != null) {
                 OrderDetails[] orderDetailsFromXml = ordersFromXml.OrderDetailsList;
                 if (orderDetailsFromXml != null) {
                     for (int i = 0; i < orderDetailsFromXml.Length; i++) {
+                        if (exportWorker.CancellationPending) {
+                            e.Cancel = true;
+                            return;
+                        }
                         OrderModel order = ordersFromXml.ToOrder(orderDetailsFromXml[i]);
                         int progressPercentage = 30 + Convert.ToInt32((float)i / (float)orderDetailsFromXml.Length * 70);
                         ExportProgressChangedEventArgs progressArgs = null;
@@ -173,8 +173,14 @@ namespace Xml2DbExporter.Export {
         Orders ParseXml() {
             XmlSerializer serializer = new XmlSerializer(typeof(Orders));
             Orders ordersFromXml = null;
-            using (XmlReader reader = XmlReader.Create(xmlFilePath, xmlReaderSettings)) {
-                ordersFromXml = serializer.Deserialize(reader) as Orders;
+            try {
+                using (XmlReader reader = XmlReader.Create(xmlFilePath, xmlReaderSettings)) {
+                    ordersFromXml = serializer.Deserialize(reader) as Orders;
+                }
+            }
+            catch (Exception ex) {
+                OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ParseXmlError, 30, String.Format("Xml parsing Error: {0}", ex.Message)));
+                exportWorker.CancelAsync();
             }
 
             // Report to UI after parse and deserialization ends

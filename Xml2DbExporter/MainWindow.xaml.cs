@@ -6,27 +6,22 @@ using System.Windows;
 using System.Configuration;
 using System.Data.SqlClient;
 using System.Data;
-using System.ComponentModel;
+using System.Collections.Generic;
 
 namespace Xml2DbExporter {
     public partial class MainWindow : Window {
 
         readonly string connectionString = ConfigurationManager.ConnectionStrings["TestDataBase"].ConnectionString;
         Exporter exporter;
-        BindingList<OrderModel> duplicatesRows = new BindingList<OrderModel>();
-        BindingList<OrderModel> ordersFromDBRows = new BindingList<OrderModel>();
-        BindingList<OrderModel> insertedRows = new BindingList<OrderModel>();
+        LinkedList<OrderModel> duplicatesRows = new LinkedList<OrderModel>();
+        LinkedList<OrderModel> ordersFromDBRows = new LinkedList<OrderModel>();
+        LinkedList<OrderModel> insertedRows = new LinkedList<OrderModel>();
 
         public MainWindow() {
             InitializeComponent();
-            InitializeLists();
-            dgOrders.ItemsSource = ordersFromDBRows;
-            dgInserted.ItemsSource = insertedRows;
-            dgDuplicates.ItemsSource = duplicatesRows;
             LoadOrdersFromDB();
             exporter = new Exporter();
             exporter.ExportProgressChanged += new ExportProgressChangedEventHandler(ExportProgressChanged);
-            
         }
 
         void btnBrowse_Click(object sender, RoutedEventArgs e) {
@@ -46,15 +41,9 @@ namespace Xml2DbExporter {
                 ExportButtonEnable(true);
             }
             else {
-                PBExport.Value = 0;
-                duplicatesRows.Clear();
-                insertedRows.Clear();
-                ordersFromDBRows.RaiseListChangedEvents = false;
-                duplicatesRows.RaiseListChangedEvents = false;
-                insertedRows.RaiseListChangedEvents = false;
                 exporter.XmlFilePath = txtBoxXmlFilePath.Text;
                 exporter.ConnectionString = connectionString;
-                ExportButtonEnable(false);
+                PrepareUIForExport();
                 exporter.Export();
             }
         }
@@ -63,26 +52,23 @@ namespace Xml2DbExporter {
             this.Dispatcher.Invoke(() => {
                 switch (e.ExportProgressType) {
                     case ExportProgressType.DuplicateRecordFound:
-                        duplicatesRows.Add(e.UserState as OrderModel);
-                        PBExport.Value = e.ProgressPercentage;
+                        duplicatesRows.AddLast(e.UserState as OrderModel);
                         break;
                     case ExportProgressType.RecordInserted:
-                        insertedRows.Add(e.UserState as OrderModel);
-                        ordersFromDBRows.Add(e.UserState as OrderModel);
-                        PBExport.Value = e.ProgressPercentage;
+                        insertedRows.AddLast(e.UserState as OrderModel);
+                        ordersFromDBRows.AddLast(e.UserState as OrderModel);
                         break;
                     case ExportProgressType.ExportCompleted:
                     case ExportProgressType.ExportCancelled:
                         txtBlockExportLog.Text = String.Format("{0}\n{1}", txtBlockExportLog.Text, e.UserState.ToString());
-                        PBExport.Value = e.ProgressPercentage;
-                        ExportButtonEnable(true);
                         UpdateUI();
                         break;
                     default:
-                        PBExport.Value = e.ProgressPercentage;
                         txtBlockExportLog.Text = String.Format("{0}\n{1}", txtBlockExportLog.Text, e.UserState.ToString());
                         break;
                 }
+                if (e.ProgressPercentage > 0)
+                    PBExport.Value = e.ProgressPercentage;
             });
         }
 
@@ -91,29 +77,27 @@ namespace Xml2DbExporter {
             btnBrowse.IsEnabled = enable;
         }
 
-        void UpdateUI() {
-            ordersFromDBRows.RaiseListChangedEvents = true;
-            duplicatesRows.RaiseListChangedEvents = true;
-            insertedRows.RaiseListChangedEvents = true;
-            ordersFromDBRows.ResetBindings();
-            duplicatesRows.ResetBindings();
-            insertedRows.ResetBindings();
+        void PrepareUIForExport() {
+            dgOrders.ItemsSource = null;
+            dgInserted.ItemsSource = null;
+            dgDuplicates.ItemsSource = null;
+            LoadOrdersFromDB();
+            duplicatesRows.Clear();
+            insertedRows.Clear();
+            PBExport.Value = 0;
+            ExportButtonEnable(false);
         }
 
-        void InitializeLists() {
-            ordersFromDBRows.AllowNew = true;
-            duplicatesRows.AllowNew = true;
-            insertedRows.AllowNew = true;
-            ordersFromDBRows.AllowEdit = false;
-            duplicatesRows.AllowEdit = false;
-            insertedRows.AllowEdit = false;
-            ordersFromDBRows.AllowRemove = false;
-            duplicatesRows.AllowRemove = false;
-            insertedRows.AllowRemove = false;
+        void UpdateUI() {
+            ExportButtonEnable(true);
+            dgOrders.ItemsSource = ordersFromDBRows;
+            dgInserted.ItemsSource = insertedRows;
+            dgDuplicates.ItemsSource = duplicatesRows;
         }
 
         void LoadOrdersFromDB() {
             ordersFromDBRows.Clear();
+            LinkedList<OrderModel> loadedList = new LinkedList<OrderModel>();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
                 string commandText = "SELECT * FROM Orders";
                 SqlCommand command = new SqlCommand(commandText);
@@ -131,10 +115,12 @@ namespace Xml2DbExporter {
                         order.OrderStatus = Convert.ToInt32(dataReader["OrderStatus"]);
                         order.OrderType = Convert.ToInt32(dataReader["OrderType"]);
                         order.OrderValue = dataReader["OrderValue"].ToString();
-                        ordersFromDBRows.Add(order);
+                        loadedList.AddLast(order);
                     }
                 }
             }
+            ordersFromDBRows = loadedList;
+            dgOrders.ItemsSource = loadedList;
         }
     }
 }

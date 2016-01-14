@@ -153,7 +153,7 @@ namespace Xml2DbExporter.Export {
 
         void ExportComplete(object sender, RunWorkerCompletedEventArgs e) {
             if (e.Cancelled)
-                OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ExportCancelled, 0, "Export was cancelled!"));
+                OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ExportCancelled, -1, "Export was cancelled!"));
             else
                 OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ExportCompleted, 100, "Export was completed successfully!"));
         }

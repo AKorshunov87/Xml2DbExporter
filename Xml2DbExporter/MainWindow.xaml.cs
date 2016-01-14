@@ -13,16 +13,19 @@ namespace Xml2DbExporter {
 
         readonly string connectionString = ConfigurationManager.ConnectionStrings["TestDataBase"].ConnectionString;
         Exporter exporter;
-        
-        public ObservableCollection<OrderModel> DuplicatesRows = new ObservableCollection<OrderModel>();
-        public ObservableCollection<OrderModel> OrdersFromDBRows = new ObservableCollection<OrderModel>();
-        public ObservableCollection<OrderModel> InsertedRows = new ObservableCollection<OrderModel>();
+        ObservableCollection<OrderModel> duplicatesRows = new ObservableCollection<OrderModel>();
+        ObservableCollection<OrderModel> ordersFromDBRows = new ObservableCollection<OrderModel>();
+        ObservableCollection<OrderModel> insertedRows = new ObservableCollection<OrderModel>();
 
         public MainWindow() {
             InitializeComponent();
+            dgOrders.DataContext = ordersFromDBRows;
+            dgInserted.DataContext = insertedRows;
+            dgDuplicates.DataContext = duplicatesRows;
             LoadOrdersFromDB();
             exporter = new Exporter();
             exporter.ExportProgressChanged += new ExportProgressChangedEventHandler(ExportProgressChanged);
+            
         }
 
         void btnBrowse_Click(object sender, RoutedEventArgs e) {
@@ -53,25 +56,28 @@ namespace Xml2DbExporter {
         }
 
         void ExportProgressChanged(object sender, ExportProgressChangedEventArgs e) {
-            switch (e.ExportProgressType) {
-                case ExportProgressType.DuplicateRecordFound:
-                    DuplicatesRows.Add(e.UserState as OrderModel);
-                    PBExport.Value = e.ProgressPercentage;
-                    break;
-                case ExportProgressType.RecordInserted:
-                    InsertedRows.Add(e.UserState as OrderModel);
-                    PBExport.Value = e.ProgressPercentage;
-                    break;
-                case ExportProgressType.ExportCompleted:
-                case ExportProgressType.ExportCancelled:
-                    txtBlockExportLog.Text = String.Format("{0}\n{1}", txtBlockExportLog.Text, e.UserState.ToString());
-                    ExportButtonEnable(true);
-                    break;
-                default:
-                    PBExport.Value = e.ProgressPercentage;
-                    txtBlockExportLog.Text = String.Format("{0}\n{1}", txtBlockExportLog.Text, e.UserState.ToString());
-                    break;
-            }
+            this.Dispatcher.Invoke(() => {
+                switch (e.ExportProgressType) {
+                    case ExportProgressType.DuplicateRecordFound:
+                        duplicatesRows.Add(e.UserState as OrderModel);
+                        PBExport.Value = e.ProgressPercentage;
+                        break;
+                    case ExportProgressType.RecordInserted:
+                        insertedRows.Add(e.UserState as OrderModel);
+                        PBExport.Value = e.ProgressPercentage;
+                        break;
+                    case ExportProgressType.ExportCompleted:
+                    case ExportProgressType.ExportCancelled:
+                        txtBlockExportLog.Text = String.Format("{0}\n{1}", txtBlockExportLog.Text, e.UserState.ToString());
+                        PBExport.Value = e.ProgressPercentage;
+                        ExportButtonEnable(true);
+                        break;
+                    default:
+                        PBExport.Value = e.ProgressPercentage;
+                        txtBlockExportLog.Text = String.Format("{0}\n{1}", txtBlockExportLog.Text, e.UserState.ToString());
+                        break;
+                }
+            });
         }
 
         void ExportButtonEnable(bool enable) {
@@ -80,9 +86,9 @@ namespace Xml2DbExporter {
         }
 
         void LoadOrdersFromDB() {
-            OrdersFromDBRows.Clear();
+            ordersFromDBRows.Clear();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                string commandText = "SELECT * FROM [testdb].[dbo].[Order]";
+                string commandText = "SELECT * FROM Orders";
                 SqlCommand command = new SqlCommand(commandText);
                 command.CommandType = CommandType.Text;
                 command.Connection = connection;
@@ -93,12 +99,12 @@ namespace Xml2DbExporter {
                         order.OrderID = Convert.ToInt64(dataReader["OrderID"]);
                         order.CustomerID = Convert.ToInt32(dataReader["CustomerID"]);
                         order.DateTimeAdded = Convert.ToDateTime(dataReader["DateTimeAdded"]);
-                        order.DateTimeUpdated = Convert.ToDateTime(dataReader["DataTimeUpdated"]);
+                        order.DateTimeUpdated = Convert.ToDateTime(dataReader["DateTimeUpdated"]);
                         order.OrderDate = Convert.ToDateTime(dataReader["OrderDate"]);
                         order.OrderStatus = Convert.ToInt32(dataReader["OrderStatus"]);
                         order.OrderType = Convert.ToInt32(dataReader["OrderType"]);
                         order.OrderValue = dataReader["OrderValue"].ToString();
-                        OrdersFromDBRows.Add(order);
+                        ordersFromDBRows.Add(order);
                     }
                 }
             }

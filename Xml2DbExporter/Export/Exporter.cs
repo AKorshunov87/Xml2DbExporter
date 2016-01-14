@@ -103,11 +103,9 @@ namespace Xml2DbExporter.Export {
         #region Initialization
         void InitializeExportWorker() {
             this.exportWorker = new BackgroundWorker();
-            //this.exportWorker.WorkerReportsProgress = true;
             this.exportWorker.WorkerSupportsCancellation = true;
             this.exportWorker.DoWork += new DoWorkEventHandler(ExportXml);
             this.exportWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(ExportComplete);
-            //this.exportWorker.ProgressChanged += new ProgressChangedEventHandler(ProgressChanged);
         }
 
         void InitializeXmlReaderSettings() {
@@ -130,7 +128,7 @@ namespace Xml2DbExporter.Export {
                 if (orderDetailsFromXml != null) {
                     for (int i = 0; i < orderDetailsFromXml.Length; i++) {
                         OrderModel order = ordersFromXml.ToOrder(orderDetailsFromXml[i]);
-                        int progressPercentage = Convert.ToInt32(i / orderDetailsFromXml.Length * 70);
+                        int progressPercentage = 30 + Convert.ToInt32((float)i / (float)orderDetailsFromXml.Length * 70);
                         ExportProgressChangedEventArgs progressArgs = null;
                         OrderModel duplicateOrder = SelectDuplicateOrder(order.OrderValue);
                         if (duplicateOrder != null) {
@@ -141,7 +139,6 @@ namespace Xml2DbExporter.Export {
                             progressArgs = new ExportProgressChangedEventArgs(ExportProgressType.RecordInserted, progressPercentage, order);
                         }
                         OnExportProgressChanged(progressArgs);
-                        //exportWorker.ReportProgress(progressPercentage, progressArgs);
                     }
                 }
             }
@@ -153,12 +150,6 @@ namespace Xml2DbExporter.Export {
             else
                 OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ExportCompleted, 100, "Export was completed successfully!"));
         }
-
-        //void ProgressChanged(object sender, ProgressChangedEventArgs e) {
-        //    ExportProgressChangedEventArgs args = e.UserState as ExportProgressChangedEventArgs;
-        //    if (args != null)
-        //        OnExportProgressChanged(args);
-        //}
 
         bool FileAndConnectionIsOk() {
             string ext = Path.GetExtension(xmlFilePath);
@@ -188,7 +179,6 @@ namespace Xml2DbExporter.Export {
 
             // Report to UI after parse and deserialization ends
             OnExportProgressChanged(new ExportProgressChangedEventArgs(ExportProgressType.ParseXmlCompleted, 30, "Xml parsing was completed successfully."));
-            // exportWorker.ReportProgress(30, new ExportProgressChangedEventArgs(ExportProgressType.ParseXmlCompleted, 30, "Xml parsing was completed successfully."));
             return ordersFromXml;
         }
 
@@ -203,7 +193,7 @@ namespace Xml2DbExporter.Export {
         #region DataBase
         void InsertOrderRecord(OrderModel order) {
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                string commandText = "INSERT INTO Order (CustomerID, OrderDate, OrderValue, OrderStatus, OrderType) VALUES (@CustomerID, @OrderDate, @OrderValue, @OrderStatus, @OrderType)";
+                string commandText = "INSERT INTO Orders (CustomerID, OrderDate, OrderValue, OrderStatus, OrderType) VALUES (@CustomerID, @OrderDate, @OrderValue, @OrderStatus, @OrderType)";
                 SqlCommand command = new SqlCommand(commandText);
                 command.CommandType = CommandType.Text;
                 command.Connection = connection;
@@ -220,7 +210,7 @@ namespace Xml2DbExporter.Export {
         OrderModel SelectDuplicateOrder(string orderValue) {
             OrderModel order = null;
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                string commandText = "SELECT TOP 1 * FROM [testdb].[dbo].[Order] WHERE OrderValue=@orderValue";
+                string commandText = "SELECT TOP 1 * FROM Orders WHERE OrderValue=@orderValue";
                 SqlCommand command = new SqlCommand(commandText);
                 command.CommandType = CommandType.Text;
                 command.Connection = connection;
@@ -232,7 +222,7 @@ namespace Xml2DbExporter.Export {
                         order.OrderID = Convert.ToInt64(dataReader["OrderID"]);
                         order.CustomerID = Convert.ToInt32(dataReader["CustomerID"]);
                         order.DateTimeAdded = Convert.ToDateTime(dataReader["DateTimeAdded"]);
-                        order.DateTimeUpdated = Convert.ToDateTime(dataReader["DataTimeUpdated"]);
+                        order.DateTimeUpdated = Convert.ToDateTime(dataReader["DateTimeUpdated"]);
                         order.OrderDate = Convert.ToDateTime(dataReader["OrderDate"]);
                         order.OrderStatus = Convert.ToInt32(dataReader["OrderStatus"]);
                         order.OrderType = Convert.ToInt32(dataReader["OrderType"]);

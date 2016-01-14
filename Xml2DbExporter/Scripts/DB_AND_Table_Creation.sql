@@ -40,7 +40,7 @@ SET ANSI_NULLS ON
 SET QUOTED_IDENTIFIER ON
 SET ANSI_PADDING ON
 
-CREATE TABLE [dbo].[Order](
+CREATE TABLE [dbo].[Orders](
 	[OrderID] [bigint] IDENTITY(0,1) NOT NULL,
 	[CustomerID] [int] NOT NULL,
 	[OrderDate] [date] NULL,
@@ -55,11 +55,11 @@ CREATE TABLE [dbo].[Order](
 )WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 SET ANSI_PADDING OFF
-ALTER TABLE [dbo].[Order] ADD  DEFAULT ((0)) FOR [CustomerID]
-ALTER TABLE [dbo].[Order] ADD  DEFAULT ((0)) FOR [OrderStatus]
-ALTER TABLE [dbo].[Order] ADD  CONSTRAINT [DF_Order_DateTimeAdded]  DEFAULT (getdate()) FOR [DateTimeAdded]
-ALTER TABLE [dbo].[Order] ADD  CONSTRAINT [DF_Order_DateTimeUpdated]  DEFAULT (getdate()) FOR [DateTimeUpdated]
-ALTER TABLE [dbo].[Order] ADD  DEFAULT ((0)) FOR [OrderType]
+ALTER TABLE [dbo].[Orders] ADD  DEFAULT ((0)) FOR [CustomerID]
+ALTER TABLE [dbo].[Orders] ADD  DEFAULT ((0)) FOR [OrderStatus]
+ALTER TABLE [dbo].[Orders] ADD  CONSTRAINT [DF_Order_DateTimeAdded]  DEFAULT (getdate()) FOR [DateTimeAdded]
+ALTER TABLE [dbo].[Orders] ADD  CONSTRAINT [DF_Order_DateTimeUpdated]  DEFAULT (getdate()) FOR [DateTimeUpdated]
+ALTER TABLE [dbo].[Orders] ADD  DEFAULT ((0)) FOR [OrderType]
 GO
 
 

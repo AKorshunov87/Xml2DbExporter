@@ -98,29 +98,44 @@ namespace Xml2DbExporter {
         void LoadOrdersFromDB() {
             ordersFromDBRows.Clear();
             LinkedList<OrderModel> loadedList = new LinkedList<OrderModel>();
-            using (SqlConnection connection = new SqlConnection(connectionString)) {
-                string commandText = "SELECT * FROM Orders";
-                SqlCommand command = new SqlCommand(commandText);
-                command.CommandType = CommandType.Text;
-                command.Connection = connection;
-                connection.Open();
-                using (SqlDataReader dataReader = command.ExecuteReader()) {
-                    while (dataReader.Read()) {
-                        OrderModel order = new OrderModel();
-                        order.OrderID = Convert.ToInt64(dataReader["OrderID"]);
-                        order.CustomerID = Convert.ToInt32(dataReader["CustomerID"]);
-                        order.DateTimeAdded = Convert.ToDateTime(dataReader["DateTimeAdded"]);
-                        order.DateTimeUpdated = Convert.ToDateTime(dataReader["DateTimeUpdated"]);
-                        order.OrderDate = Convert.ToDateTime(dataReader["OrderDate"]);
-                        order.OrderStatus = Convert.ToInt32(dataReader["OrderStatus"]);
-                        order.OrderType = Convert.ToInt32(dataReader["OrderType"]);
-                        order.OrderValue = dataReader["OrderValue"].ToString();
-                        loadedList.AddLast(order);
+            if (CheckConnection()) {
+                using (SqlConnection connection = new SqlConnection(connectionString)) {
+                    string commandText = "SELECT * FROM Orders";
+                    SqlCommand command = new SqlCommand(commandText);
+                    command.CommandType = CommandType.Text;
+                    command.Connection = connection;
+                    connection.Open();
+                    using (SqlDataReader dataReader = command.ExecuteReader()) {
+                        while (dataReader.Read()) {
+                            OrderModel order = new OrderModel();
+                            order.OrderID = Convert.ToInt64(dataReader["OrderID"]);
+                            order.CustomerID = Convert.ToInt32(dataReader["CustomerID"]);
+                            order.DateTimeAdded = Convert.ToDateTime(dataReader["DateTimeAdded"]);
+                            order.DateTimeUpdated = Convert.ToDateTime(dataReader["DateTimeUpdated"]);
+                            order.OrderDate = Convert.ToDateTime(dataReader["OrderDate"]);
+                            order.OrderStatus = Convert.ToInt32(dataReader["OrderStatus"]);
+                            order.OrderType = Convert.ToInt32(dataReader["OrderType"]);
+                            order.OrderValue = dataReader["OrderValue"].ToString();
+                            loadedList.AddLast(order);
+                        }
                     }
                 }
+                ordersFromDBRows = loadedList;
+                dgOrders.ItemsSource = loadedList;
             }
-            ordersFromDBRows = loadedList;
-            dgOrders.ItemsSource = loadedList;
+        }
+
+        bool CheckConnection() {
+            bool isOk = true;
+            try {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                    connection.Open();
+            }
+            catch (SqlException) {
+                MessageBox.Show("Database connection string is incorrect.");
+                isOk = false;
+            }
+            return isOk;
         }
     }
 }

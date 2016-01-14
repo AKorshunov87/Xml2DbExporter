@@ -121,6 +121,8 @@ namespace Xml2DbExporter.Export {
             Orders ordersFromXml = ParseXml();
             if (ordersFromXml != null) {
                 OrderDetails[] orderDetailsFromXml = ordersFromXml.OrderDetailsList;
+                // Prepare Duplicates.csv file
+                File.WriteAllText("Duplicates.csv", "CustomerID,OrderDate,OrderValue,OrderStatus,OrderType");
                 if (orderDetailsFromXml != null) {
                     for (int i = 0; i < orderDetailsFromXml.Length; i++) {
                         if (exportWorker.CancellationPending) {
@@ -133,6 +135,9 @@ namespace Xml2DbExporter.Export {
                         OrderModel duplicateOrder = SelectDuplicateOrder(order.OrderValue);
                         if (duplicateOrder != null) {
                             progressArgs = new ExportProgressChangedEventArgs(ExportProgressType.DuplicateRecordFound, progressPercentage, duplicateOrder);
+                            // Save Duplicate order to CSV file
+                            string content = String.Format("{0},{1},{2},{3},{4}",duplicateOrder.CustomerID, duplicateOrder.OrderDate, duplicateOrder.OrderValue, duplicateOrder.OrderStatus, duplicateOrder.OrderType);
+                            File.AppendAllText("Duplicates.csv", content);
                         }
                         else {
                             InsertOrderRecord(order);

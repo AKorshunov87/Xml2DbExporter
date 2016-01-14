@@ -30,11 +30,9 @@ namespace Xml2DbExporter {
 
         void btnBrowse_Click(object sender, RoutedEventArgs e) {
             OpenFileDialog openFileDialog = new OpenFileDialog();
-
             openFileDialog.DefaultExt = "xml";
             openFileDialog.Filter = "XML Files (*.xml)|*.xml";
             openFileDialog.FilterIndex = 0;
-
             if (openFileDialog.ShowDialog() == true) {
                 string filename = openFileDialog.FileName;
                 txtBoxXmlFilePath.Text = filename;
@@ -48,6 +46,8 @@ namespace Xml2DbExporter {
             }
             else {
                 PBExport.Value = 0;
+                duplicatesRows.Clear();
+                insertedRows.Clear();
                 exporter.XmlFilePath = txtBoxXmlFilePath.Text;
                 exporter.ConnectionString = connectionString;
                 ExportButtonEnable(false);
@@ -64,6 +64,7 @@ namespace Xml2DbExporter {
                         break;
                     case ExportProgressType.RecordInserted:
                         insertedRows.Add(e.UserState as OrderModel);
+                        ordersFromDBRows.Add(e.UserState as OrderModel);
                         PBExport.Value = e.ProgressPercentage;
                         break;
                     case ExportProgressType.ExportCompleted:
